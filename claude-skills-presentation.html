@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Skills — A Practical Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --card: #22222f;
+    --border: #2e2e3d;
+    --text: #e8e8f0;
+    --muted: #9d9db5;
+    --accent: #c4a1ff;
+    --accent2: #7b6eff;
+    --accent3: #ff8f6b;
+    --gradient: linear-gradient(135deg, #7b6eff, #c4a1ff, #ff8f6b);
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* ── Slide container ── */
+  .deck { flex: 1; position: relative; overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 60px 80px;
+    opacity: 0; pointer-events: none;
+    transform: translateX(60px);
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  .slide.active {
+    opacity: 1; pointer-events: auto; transform: translateX(0);
+  }
+  .slide.exit {
+    opacity: 0; transform: translateX(-60px);
+  }
+
+  /* ── Typography ── */
+  h1 {
+    font-size: 3.2rem; font-weight: 700; line-height: 1.15;
+    background: var(--gradient); -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; text-align: center;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 2rem; font-weight: 600; margin-bottom: 32px;
+    color: var(--accent); text-align: center;
+  }
+  .subtitle { font-size: 1.25rem; color: var(--muted); text-align: center; max-width: 640px; line-height: 1.6; }
+  p.body { font-size: 1.05rem; color: var(--muted); max-width: 720px; line-height: 1.75; text-align: center; }
+
+  /* ── Grid layouts ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 900px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; width: 100%; max-width: 1000px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 24px;
+    transition: border-color .3s, transform .3s;
+  }
+  .card:hover { border-color: var(--accent2); transform: translateY(-4px); }
+  .card .icon { font-size: 2rem; margin-bottom: 12px; display: block; }
+  .card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .card p { font-size: .92rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── Tags ── */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
+  .tag {
+    background: var(--card); border: 1px solid var(--border);
+    padding: 8px 18px; border-radius: 99px; font-size: .88rem;
+    color: var(--accent); font-weight: 500;
+  }
+
+  /* ── Steps ── */
+  .steps { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 700px; }
+  .step {
+    display: flex; align-items: flex-start; gap: 20px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 26px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent2); color: #fff; font-weight: 700;
+    border-radius: 50%; font-size: 1rem;
+  }
+  .step-body h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+  .step-body p  { font-size: .9rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── Code block ── */
+  .code-block {
+    background: #161620; border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; width: 100%; max-width: 700px;
+    font-family: 'Courier New', monospace; font-size: .92rem;
+    line-height: 1.8; color: var(--muted); white-space: pre-wrap;
+    text-align: left;
+  }
+  .code-block .kw { color: var(--accent); }
+  .code-block .str { color: var(--accent3); }
+  .code-block .cmt { color: #555570; }
+
+  /* ── Comparison table ── */
+  .compare { width: 100%; max-width: 800px; border-collapse: collapse; margin-top: 8px; }
+  .compare th, .compare td { padding: 16px 20px; text-align: left; font-size: .95rem; }
+  .compare th { color: var(--accent); font-weight: 600; border-bottom: 2px solid var(--border); }
+  .compare td { color: var(--muted); border-bottom: 1px solid var(--border); }
+  .compare tr:last-child td { border-bottom: none; }
+  .compare .check { color: #6ee6a0; font-weight: 700; }
+  .compare .cross { color: #ff6b6b; font-weight: 700; }
+
+  /* ── Bottom nav ── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px; background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  nav .counter { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 60px; text-align: center; }
+
+  nav button {
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    padding: 10px 24px; border-radius: 10px; font-size: .9rem;
+    cursor: pointer; transition: background .2s, border-color .2s;
+    font-family: inherit; font-weight: 500;
+  }
+  nav button:hover { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  nav button:disabled { opacity: .3; pointer-events: none; }
+
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: var(--gradient); transition: width .4s ease; z-index: 10;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 28px; }
+    h1 { font-size: 2.2rem; }
+    h2 { font-size: 1.5rem; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    nav { padding: 14px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 0 — Title -->
+  <div class="slide active">
+    <h1>Claude Skills</h1>
+    <p class="subtitle">A practical guide to using Claude's built-in skills to produce professional documents, spreadsheets, presentations, and more — faster than ever.</p>
+    <div class="tag-row" style="margin-top:32px;">
+      <span class="tag">docx</span><span class="tag">pptx</span><span class="tag">xlsx</span>
+      <span class="tag">pdf</span><span class="tag">canvas</span><span class="tag">custom skills</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 1 — What Are Skills? -->
+  <div class="slide">
+    <h2>What Are Skills?</h2>
+    <p class="body" style="margin-bottom:32px;">Skills are curated sets of best practices and instructions that guide Claude to produce high-quality, professional outputs. Think of them as expert knowledge packs that Claude reads before starting any task.</p>
+    <div class="grid2">
+      <div class="card">
+        <span class="icon">🧠</span>
+        <h3>Domain Knowledge</h3>
+        <p>Each skill contains tried-and-tested techniques refined through extensive trial and error with LLMs.</p>
+      </div>
+      <div class="card">
+        <span class="icon">⚡</span>
+        <h3>Auto-Activated</h3>
+        <p>Claude automatically reads the right skill file before working, so you get great results without extra prompting.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 — Available Skills -->
+  <div class="slide">
+    <h2>Built-in Skills</h2>
+    <div class="grid3">
+      <div class="card">
+        <span class="icon">📝</span>
+        <h3>docx</h3>
+        <p>Create, edit, and analyze Word documents with formatting, tracked changes, and comments.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📊</span>
+        <h3>pptx</h3>
+        <p>Build polished PowerPoint decks with layouts, speaker notes, and professional design.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📈</span>
+        <h3>xlsx</h3>
+        <p>Produce spreadsheets with formulas, formatting, charts, and data analysis.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📄</span>
+        <h3>pdf</h3>
+        <p>Read, merge, split, fill forms, watermark, encrypt, and create PDFs.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🎨</span>
+        <h3>canvas-design</h3>
+        <p>Generate original visual art, posters, and designs as PNG or PDF.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🛠️</span>
+        <h3>skill-creator</h3>
+        <p>Build custom skills, run evals, and benchmark performance.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — How It Works -->
+  <div class="slide">
+    <h2>How Skills Work</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>You Make a Request</h3>
+          <p>Ask Claude to create a document, presentation, spreadsheet, or any supported output.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Claude Reads the Skill</h3>
+          <p>Before writing any code or content, Claude reads the relevant SKILL.md file to load best practices.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Professional Output</h3>
+          <p>The skill guides Claude through formatting, structure, and quality checks to deliver polished results.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 — Example Prompts -->
+  <div class="slide">
+    <h2>Example Prompts</h2>
+    <div class="code-block"><span class="cmt">/* Word Document */</span>
+<span class="str">"Write a project proposal as a Word doc with
+ a table of contents and executive summary."</span>
+
+<span class="cmt">/* Presentation */</span>
+<span class="str">"Create a 10-slide pitch deck for our Series A
+ fundraise with charts and speaker notes."</span>
+
+<span class="cmt">/* Spreadsheet */</span>
+<span class="str">"Build a monthly budget tracker in Excel with
+ conditional formatting and summary formulas."</span>
+
+<span class="cmt">/* PDF */</span>
+<span class="str">"Merge these three PDF invoices into one file
+ and add a watermark."</span></div>
+  </div>
+
+  <!-- SLIDE 5 — Benefits (with vs without) -->
+  <div class="slide">
+    <h2>With Skills vs. Without</h2>
+    <table class="compare">
+      <tr><th>Aspect</th><th>Without Skills</th><th>With Skills</th></tr>
+      <tr><td>Formatting</td><td class="cross">Basic / inconsistent</td><td class="check">Professional & polished</td></tr>
+      <tr><td>Structure</td><td class="cross">Generic layout</td><td class="check">Domain-aware structure</td></tr>
+      <tr><td>Reliability</td><td class="cross">Hit-or-miss quality</td><td class="check">Consistent best practices</td></tr>
+      <tr><td>User Effort</td><td class="cross">Detailed prompting needed</td><td class="check">Simple request is enough</td></tr>
+      <tr><td>Iteration</td><td class="cross">Manual fixes required</td><td class="check">Gets it right first time</td></tr>
+    </table>
+  </div>
+
+  <!-- SLIDE 6 — Key Benefits -->
+  <div class="slide">
+    <h2>Key Benefits</h2>
+    <div class="grid2">
+      <div class="card">
+        <span class="icon">🚀</span>
+        <h3>Speed</h3>
+        <p>Go from idea to professional document in seconds — no manual formatting or template hunting.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🎯</span>
+        <h3>Consistency</h3>
+        <p>Every output follows proven patterns, ensuring a uniform quality bar across all your work.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔧</span>
+        <h3>Extensibility</h3>
+        <p>Create custom skills for your team's unique workflows using the skill-creator tool.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📂</span>
+        <h3>Multi-Format</h3>
+        <p>One unified experience across Word, Excel, PowerPoint, PDF, images, and more.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 — Custom Skills -->
+  <div class="slide">
+    <h2>Creating Custom Skills</h2>
+    <p class="body" style="margin-bottom:28px;">Use the <strong style="color:var(--accent)">skill-creator</strong> to build skills tailored to your team's needs.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Define the Skill</h3>
+          <p>Describe the output format, quality standards, and any domain-specific rules.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Add Examples</h3>
+          <p>Provide sample inputs and expected outputs so Claude learns your style.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Run Evals</h3>
+          <p>Benchmark your skill's performance and iterate until quality is where you want it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 — Best Practices -->
+  <div class="slide">
+    <h2>Best Practices</h2>
+    <div class="grid2">
+      <div class="card">
+        <span class="icon">💡</span>
+        <h3>Be Specific</h3>
+        <p>Mention the file type you want (e.g., "as a .docx") so the right skill activates automatically.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔗</span>
+        <h3>Combine Skills</h3>
+        <p>Skills can work together — generate data in Excel, then visualize it in a PowerPoint deck.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔄</span>
+        <h3>Iterate Freely</h3>
+        <p>Ask Claude to refine, restructure, or restyle — skills ensure each iteration stays professional.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📁</span>
+        <h3>Use Your Files</h3>
+        <p>Upload existing documents and Claude will read, edit, or transform them using the right skill.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 — Closing -->
+  <div class="slide">
+    <h1>Start Using Skills Today</h1>
+    <p class="subtitle" style="margin-bottom:36px;">Just describe what you need. Claude will pick the right skill, follow best practices, and deliver professional results — every time.</p>
+    <div class="tag-row">
+      <span class="tag" style="border-color:var(--accent2);color:var(--accent3);">Try it now in Cowork mode</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<nav>
+  <button id="prev" onclick="go(-1)">← Previous</button>
+  <span class="counter" id="counter">1 / 10</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</nav>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let cur = 0;
+
+  function show(n) {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit');
+      if (i === n) s.classList.add('active');
+      else if (i < n) s.classList.add('exit');
+    });
+    document.getElementById('counter').textContent = `${n + 1} / ${total}`;
+    document.getElementById('prev').disabled = n === 0;
+    document.getElementById('next').disabled = n === total - 1;
+    document.getElementById('progress').style.width = `${((n + 1) / total) * 100}%`;
+  }
+
+  function go(dir) { cur = Math.max(0, Math.min(total - 1, cur + dir)); show(cur); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) go(diff < 0 ? 1 : -1);
+  });
+
+  show(0);
+</script>
+
+</body>
+</html>
